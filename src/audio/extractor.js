@@ -194,7 +194,7 @@ class AudioExtractor {
 
   /**
    * Smart matcher that finds the exact studio master recording matching Spotify track duration
-   * Prioritizes official Topic / Record Label distributions over music videos or covers.
+   * Prioritizes official Topic / Record Label distributions and heavily penalizes remixes/slowed/pitch-shifts.
    */
   static async matchStudioAudio(title, artist, targetDurationSec = 0) {
     try {
@@ -202,8 +202,8 @@ class AudioExtractor {
 
       // Split multiple artists on comma, ampersand, feat, etc.
       const artistParts = (artist || '').split(/[,&]|\bfeat\b|\bft\b/i).map(a => a.trim()).filter(Boolean);
-      const primaryArtist = artistParts[0] || artist || '';
-      const secondaryArtist = artistParts[1] || '';
+      const primaryArtist = (artistParts[0] || artist || '').toLowerCase();
+      const secondaryArtist = (artistParts[1] || '').toLowerCase();
 
       const cleanTitle = (title || '')
         .replace(/\(feat\..*?\)/i, '')
@@ -213,12 +213,30 @@ class AudioExtractor {
         .replace(/\(from ".*?"\)/i, '')
         .replace(/\[from ".*?"\]/i, '')
         .trim();
+      const cleanTitleLower = cleanTitle.toLowerCase();
 
       const queries = [
+        `${cleanTitle} ${primaryArtist} official audio`,
         `${primaryArtist} - ${cleanTitle} Topic`,
-        `${primaryArtist} ${secondaryArtist} - ${cleanTitle} audio`,
         `${cleanTitle} ${primaryArtist}`
       ];
+
+      const officialLabels = [
+        'topic', 'yrf', 'yash raj', 't-series', 'tseries', 'sony', 'sonymusic', 'zee', 'zeemusic',
+        'saregama', 'tips', 'speed records', 'white hill', 'geet mp3', 'desi music', 'eros',
+        'universal', 'warner', 'atlantic', 'columbia', 'interscope', 'republic', 'def jam', 'rca',
+        'epic', 'capitol', 'virgin', 'spinnin', 'monstercat', 'vevo'
+      ];
+
+      const bannedModifiers = [
+        'remix', 'mix', 'dj', 'slowed', 'reverb', 'sped up', 'speed up', 'speedup', 'bass boosted',
+        'bassboosted', 'mashup', 'mash up', 'lofi', 'lo-fi', 'cover', 'rendition', 'tribute',
+        'karaoke', 'instrumental', 'live', 'concert', 'teaser', 'trailer', 'dialogue', 'skit',
+        'reaction', '8d', '16d', '3d audio', 'parody', 'unplugged', 'acoustic'
+      ];
+
+      let best = null;
+      let bestScore = -9999;
 
       for (const q of queries) {
         const cmd = `${bin} --default-search "ytsearch5" --extractor-args "youtube:player_client=android,web" --no-check-certificates --geo-bypass --print "%(id)s\t%(duration)s\t%(uploader)s\t%(title)s" "${q.replace(/"/g, '')}"`;
@@ -232,9 +250,6 @@ class AudioExtractor {
         const lines = stdout.split('\n').map(l => l.trim()).filter(Boolean);
         if (!lines.length) continue;
 
-        let best = null;
-        let bestScore = -9999;
-
         for (const line of lines) {
           const parts = line.split('\t');
           if (parts.length < 4) continue;
@@ -246,36 +261,56 @@ class AudioExtractor {
           let score = 0;
           const durDiff = targetDurationSec > 0 ? Math.abs(dur - targetDurationSec) : 0;
 
-          // Official Topic or record label channel
-          if (uploader.includes('topic')) score += 80;
-          else if (uploader.includes('vevo') || uploader.includes('music') || uploader.includes('records') || uploader.includes('series') || uploader.includes('t-series') || uploader.includes('sony')) score += 60;
+          // 1. Channel authority
+          if (uploader.includes('topic')) {
+            score += 160;
+          } else if (uploader.includes(primaryArtist) || primaryArtist.includes(uploader)) {
+            score += 130;
+          } else if (officialLabels.some(lbl => uploader.includes(lbl))) {
+            score += 100;
+          } else {
+            score -= 50; // Fan / unofficial channel penalty (often pitch-shifted)
+          }
 
-          // Exact duration match
-          if (durDiff <= 3) score += 50;
-          else if (durDiff <= 8) score += 30;
-          else if (durDiff > 35) score -= 40;
+          // 2. Strict duration matching
+          if (targetDurationSec > 0) {
+            if (durDiff <= 2) score += 80;
+            else if (durDiff <= 5) score += 50;
+            else if (durDiff <= 10) score += 20;
+            else if (durDiff > 25) score -= 180;
+            else if (durDiff > 45) score -= 350;
+          }
 
-          if (candTitle.includes('audio') || candTitle.includes('remaster')) score += 25;
-          if (candTitle.includes('lyric')) score += 20;
+          // 3. Title accuracy
+          if (candTitle.includes(cleanTitleLower)) score += 40;
+          if (candTitle.includes('official audio')) score += 50;
 
-          // Penalize music video skits, live, covers
-          if (candTitle.includes('official video') || candTitle.includes('music video')) score -= 40;
-          if (candTitle.includes('live') || candTitle.includes('concert')) score -= 80;
-          if (candTitle.includes('cover') || candTitle.includes('tribute') || candTitle.includes('karaoke')) score -= 100;
+          // 4. Strict penalties for altered / remixed audio
+          for (const mod of bannedModifiers) {
+            if (!cleanTitleLower.includes(mod) && candTitle.includes(mod)) {
+              score -= 300;
+            }
+          }
 
           if (score > bestScore) {
             bestScore = score;
             best = {
               id,
               url: `https://www.youtube.com/watch?v=${id}`,
-              duration: dur
+              duration: dur,
+              score
             };
           }
         }
 
-        if (best) {
+        // If an authentic verified master track was found (> 180 score), stop searching further queries
+        if (best && bestScore >= 180) {
           return best.url;
         }
+      }
+
+      if (best) {
+        return best.url;
       }
 
       // Fallback: direct simple search
@@ -374,7 +409,7 @@ class AudioExtractor {
       try {
         data = await spotifyInfo.getData(url);
       } catch (err) {
-        // Fallback: extract track name from oembed
+        // Fallback 1: extract track name from oembed
         try {
           const oembedRes = await fetch(`https://open.spotify.com/oembed?url=${encodeURIComponent(url)}`);
           const odata = await oembedRes.json();
@@ -382,12 +417,39 @@ class AudioExtractor {
             data = {
               title: odata.title,
               name: odata.title,
-              artists: [{ name: 'Spotify Artist' }],
-              duration: 210000,
+              artists: [{ name: odata.author_name || 'Spotify Artist' }],
+              duration: 0,
               thumbnail: odata.thumbnail_url
             };
           }
         } catch (e) {}
+
+        // Fallback 2: scrape <title> tag from Spotify page directly
+        if (!data) {
+          try {
+            const pageRes = await fetch(url, {
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+              }
+            });
+            const html = await pageRes.text();
+            const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
+            if (titleMatch && titleMatch[1]) {
+              const fullTitle = titleMatch[1];
+              const parsed = fullTitle.match(/^(.+?)\s+-\s+song(?:\s+and\s+lyrics)?\s+by\s+(.+?)\s*\|\s*Spotify$/i);
+              if (parsed) {
+                data = {
+                  title: parsed[1].trim(),
+                  name: parsed[1].trim(),
+                  artists: [{ name: parsed[2].trim() }],
+                  duration: 0,
+                  thumbnail: null
+                };
+              }
+            }
+          } catch (e) {}
+        }
       }
 
       if (!data) {

@@ -80,6 +80,17 @@ class AudioStreamer {
       windowsHide: true
     });
 
+    // Suppress EPIPE when stream is aborted or skipped
+    ffmpegProcess.stdin.on('error', (err) => {
+      if (err.code === 'EPIPE' || err.code === 'ERR_STREAM_DESTROYED') return;
+      console.warn('[FFmpeg stdin warning]:', err.message);
+    });
+
+    ytdlpProcess.stdout.on('error', (err) => {
+      if (err.code === 'EPIPE' || err.code === 'ERR_STREAM_DESTROYED') return;
+      console.warn('[yt-dlp stdout warning]:', err.message);
+    });
+
     ytdlpProcess.stdout.pipe(ffmpegProcess.stdin);
 
     ytdlpProcess.stderr.on('data', (d) => {
@@ -98,10 +109,13 @@ class AudioStreamer {
 
     const cleanup = () => {
       try {
-        if (!ytdlpProcess.killed) ytdlpProcess.kill();
+        ytdlpProcess.stdout.unpipe(ffmpegProcess.stdin);
       } catch (e) {}
       try {
         if (!ffmpegProcess.killed) ffmpegProcess.kill();
+      } catch (e) {}
+      try {
+        if (!ytdlpProcess.killed) ytdlpProcess.kill();
       } catch (e) {}
     };
 

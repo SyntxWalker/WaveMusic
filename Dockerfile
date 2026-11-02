@@ -11,10 +11,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && ln -s /usr/bin/python3 /usr/bin/python || true \
     && rm -rf /var/lib/apt/lists/*
 
-# Install yt-dlp into Python environment and as standalone binary
-RUN pip3 install --no-cache-dir --break-system-packages yt-dlp || pip3 install --no-cache-dir yt-dlp
+# Install yt-dlp standalone binary and symlink across all standard binary paths
 RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp \
-    && chmod a+rx /usr/local/bin/yt-dlp
+    && chmod a+rx /usr/local/bin/yt-dlp \
+    && ln -sf /usr/local/bin/yt-dlp /usr/bin/yt-dlp \
+    && ln -sf /usr/local/bin/yt-dlp /usr/local/bin/youtube-dl \
+    && ln -sf /usr/local/bin/yt-dlp /usr/bin/youtube-dl \
+    && pip3 install --no-cache-dir --break-system-packages yt-dlp || true
 
 WORKDIR /app
 

@@ -1,4 +1,4 @@
-const { exec } = require('child_process');
+const { exec, execSync } = require('child_process');
 const YouTube = require('youtube-sr').default;
 const spotifyInfo = require('spotify-url-info')(fetch);
 
@@ -22,9 +22,45 @@ function parseDurationFormatted(formatted) {
   return 0;
 }
 
+let cachedYtDlp = null;
+function getYtDlp() {
+  if (cachedYtDlp) return cachedYtDlp;
+
+  // 1. Direct yt-dlp binary (works on Docker /usr/local/bin/yt-dlp, Linux, and Windows PATH)
+  try {
+    execSync('yt-dlp --version', { stdio: 'ignore' });
+    cachedYtDlp = 'yt-dlp';
+    return cachedYtDlp;
+  } catch (e) {}
+
+  // 2. /usr/local/bin/yt-dlp (standard Linux curl install in Docker)
+  try {
+    execSync('/usr/local/bin/yt-dlp --version', { stdio: 'ignore' });
+    cachedYtDlp = '/usr/local/bin/yt-dlp';
+    return cachedYtDlp;
+  } catch (e) {}
+
+  // 3. python3 -m yt_dlp
+  try {
+    execSync('python3 -m yt_dlp --version', { stdio: 'ignore' });
+    cachedYtDlp = 'python3 -m yt_dlp';
+    return cachedYtDlp;
+  } catch (e) {}
+
+  // 4. python -m yt_dlp
+  try {
+    execSync('python -m yt_dlp --version', { stdio: 'ignore' });
+    cachedYtDlp = 'python -m yt_dlp';
+    return cachedYtDlp;
+  } catch (e) {}
+
+  cachedYtDlp = 'yt-dlp';
+  return cachedYtDlp;
+}
+
 function execPromise(cmd) {
   return new Promise((resolve, reject) => {
-    exec(cmd, { maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
+    exec(cmd, { maxBuffer: 15 * 1024 * 1024 }, (err, stdout, stderr) => {
       if (err) return reject(new Error(stderr || err.message));
       resolve(stdout.trim());
     });
@@ -33,7 +69,7 @@ function execPromise(cmd) {
 
 class AudioExtractor {
   /**
-   * Resolves direct audio stream URL using yt-dlp with best audio format
+   * Resolves direct audio stream URL with anti-bot bypass for cloud hosts (Render/Docker)
    */
   static async getAudioStreamUrl(targetUrl) {
     let cleanUrl = targetUrl;
@@ -44,11 +80,29 @@ class AudioExtractor {
       }
     }
 
-    const cmd = `python -m yt_dlp -g -f "bestaudio[acodec=opus]/bestaudio[ext=m4a]/bestaudio/best" --audio-quality 0 "${cleanUrl}"`;
-    const output = await execPromise(cmd);
-    const lines = output.split('\n').map(l => l.trim()).filter(Boolean);
-    if (!lines.length) throw new Error('Could not extract direct stream URL');
-    return lines[lines.length - 1];
+    const bin = getYtDlp();
+
+    // Primary: Android client bypass prevents cloud datacenter IP blocks (HTTP 429 / bot challenges)
+    const primaryCmd = `${bin} -g -f "bestaudio[acodec=opus]/bestaudio[ext=m4a]/bestaudio/best" --extractor-args "youtube:player_client=android,web" --no-check-certificates --geo-bypass --audio-quality 0 "${cleanUrl}"`;
+    try {
+      const output = await execPromise(primaryCmd);
+      const lines = output.split('\n').map(l => l.trim()).filter(Boolean);
+      if (lines.length) return lines[lines.length - 1];
+    } catch (err) {
+      console.warn('[getAudioStreamUrl primary warning]:', err.message);
+    }
+
+    // Fallback: Standard audio format extraction
+    try {
+      const fallbackCmd = `${bin} -g -f "bestaudio/best" --no-check-certificates --geo-bypass "${cleanUrl}"`;
+      const output = await execPromise(fallbackCmd);
+      const lines = output.split('\n').map(l => l.trim()).filter(Boolean);
+      if (lines.length) return lines[lines.length - 1];
+    } catch (err) {
+      console.warn('[getAudioStreamUrl fallback warning]:', err.message);
+    }
+
+    throw new Error('Could not extract direct stream URL');
   }
 
   /**
@@ -85,11 +139,57 @@ class AudioExtractor {
   }
 
   /**
-   * Searches the official studio catalogue for a single track
+   * Searches official studio catalogue for a single track
    */
   static async getStudioTrackMetadata(query) {
     const list = await this.searchStudioTracks(query, 1);
     return list.length > 0 ? list[0] : null;
+  }
+
+  /**
+   * Guaranteed YouTube search fallback returning non-null playable URLs
+   */
+  static async searchYouTubeOnly(query, limit = 5) {
+    try {
+      const results = await YouTube.search(query, { limit });
+      if (results && results.length > 0) {
+        return results.map(item => ({
+          title: item.title || 'Unknown Title',
+          author: item.channel?.name || 'Unknown Artist',
+          url: item.url,
+          thumbnail: item.thumbnail?.url || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500',
+          duration: item.duration ? Math.floor(item.duration / 1000) : parseDurationFormatted(item.durationFormatted),
+          durationFormatted: item.durationFormatted || formatDuration(item.duration ? item.duration / 1000 : 0),
+          source: 'spotify'
+        }));
+      }
+    } catch (e) {}
+
+    const bin = getYtDlp();
+    try {
+      const cmd = `${bin} --default-search "ytsearch${limit}" --no-check-certificates --geo-bypass --print "%(id)s\t%(duration)s\t%(uploader)s\t%(title)s" "${query.replace(/"/g, '')}"`;
+      const stdout = await execPromise(cmd);
+      const lines = stdout.split('\n').map(l => l.trim()).filter(Boolean);
+      return lines.map(line => {
+        const parts = line.split('\t');
+        const id = parts[0];
+        const dur = parseInt(parts[1], 10) || 0;
+        const uploader = parts[2] || 'Artist';
+        const title = parts.slice(3).join('\t') || 'Unknown Title';
+        return {
+          title,
+          author: uploader,
+          url: `https://www.youtube.com/watch?v=${id}`,
+          thumbnail: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
+          duration: dur,
+          durationFormatted: formatDuration(dur),
+          source: 'spotify'
+        };
+      });
+    } catch (err) {
+      console.warn('[searchYouTubeOnly Warning]:', err.message);
+      return [];
+    }
   }
 
   /**
@@ -98,22 +198,30 @@ class AudioExtractor {
    */
   static async matchStudioAudio(title, artist, targetDurationSec = 0) {
     try {
-      const cleanArtist = artist.split(',')[0].replace(/ft\..*$/i, '').trim();
-      const cleanTitle = title
+      const bin = getYtDlp();
+
+      // Split multiple artists on comma, ampersand, feat, etc.
+      const artistParts = (artist || '').split(/[,&]|\bfeat\b|\bft\b/i).map(a => a.trim()).filter(Boolean);
+      const primaryArtist = artistParts[0] || artist || '';
+      const secondaryArtist = artistParts[1] || '';
+
+      const cleanTitle = (title || '')
         .replace(/\(feat\..*?\)/i, '')
         .replace(/\[feat\..*?\]/i, '')
         .replace(/\(remaster.*?\)/i, '')
         .replace(/\[remaster.*?\]/i, '')
+        .replace(/\(from ".*?"\)/i, '')
+        .replace(/\[from ".*?"\]/i, '')
         .trim();
 
-      // Query 1: YouTube Music Topic / Official Studio release
       const queries = [
-        `${cleanArtist} - ${cleanTitle} Topic`,
-        `${cleanArtist} - ${cleanTitle} audio`
+        `${primaryArtist} - ${cleanTitle} Topic`,
+        `${primaryArtist} ${secondaryArtist} - ${cleanTitle} audio`,
+        `${cleanTitle} ${primaryArtist}`
       ];
 
       for (const q of queries) {
-        const cmd = `python -m yt_dlp --default-search "ytsearch5" --print "%(id)s\t%(duration)s\t%(uploader)s\t%(title)s" "${q.replace(/"/g, '')}"`;
+        const cmd = `${bin} --default-search "ytsearch5" --extractor-args "youtube:player_client=android,web" --no-check-certificates --geo-bypass --print "%(id)s\t%(duration)s\t%(uploader)s\t%(title)s" "${q.replace(/"/g, '')}"`;
         let stdout = '';
         try {
           stdout = await execPromise(cmd);
@@ -138,19 +246,21 @@ class AudioExtractor {
           let score = 0;
           const durDiff = targetDurationSec > 0 ? Math.abs(dur - targetDurationSec) : 0;
 
-          // Official Topic channel is the exact studio track distributed to Spotify / YouTube Music
+          // Official Topic or record label channel
           if (uploader.includes('topic')) score += 80;
-          else if (uploader.includes('vevo')) score += 30;
+          else if (uploader.includes('vevo') || uploader.includes('music') || uploader.includes('records') || uploader.includes('series') || uploader.includes('t-series') || uploader.includes('sony')) score += 60;
 
-          // Exact duration match (±2s)
-          if (durDiff <= 2) score += 50;
-          else if (durDiff <= 5) score += 30;
-          else if (durDiff > 25) score -= 50;
+          // Exact duration match
+          if (durDiff <= 3) score += 50;
+          else if (durDiff <= 8) score += 30;
+          else if (durDiff > 35) score -= 40;
 
           if (candTitle.includes('audio') || candTitle.includes('remaster')) score += 25;
-          // Heavily penalize music videos, live performances, and covers
-          if (candTitle.includes('official video') || candTitle.includes('music video')) score -= 70;
-          if (candTitle.includes('live') || candTitle.includes('concert')) score -= 90;
+          if (candTitle.includes('lyric')) score += 20;
+
+          // Penalize music video skits, live, covers
+          if (candTitle.includes('official video') || candTitle.includes('music video')) score -= 40;
+          if (candTitle.includes('live') || candTitle.includes('concert')) score -= 80;
           if (candTitle.includes('cover') || candTitle.includes('tribute') || candTitle.includes('karaoke')) score -= 100;
 
           if (score > bestScore) {
@@ -163,13 +273,13 @@ class AudioExtractor {
           }
         }
 
-        if (best && bestScore > 0) {
+        if (best) {
           return best.url;
         }
       }
 
-      // Fallback: simple search
-      const fallbackCmd = `python -m yt_dlp --default-search "ytsearch1" --print "%(id)s" "${cleanArtist} - ${cleanTitle} audio"`;
+      // Fallback: direct simple search
+      const fallbackCmd = `${bin} --default-search "ytsearch1" --no-check-certificates --geo-bypass --print "%(id)s" "${cleanTitle} ${primaryArtist}"`;
       const fallbackOut = await execPromise(fallbackCmd);
       const fallbackId = fallbackOut.split('\n')[0].trim();
       return fallbackId ? `https://www.youtube.com/watch?v=${fallbackId}` : null;
@@ -184,49 +294,16 @@ class AudioExtractor {
    * ALWAYS searches Spotify / Studio catalogue first!
    */
   static async search(query, limit = 5) {
-    // 1. Primary: Search Spotify / Studio discography catalogue
     const studioTracks = await this.searchStudioTracks(query, limit);
     if (studioTracks.length > 0) {
       return studioTracks;
     }
-
-    // 2. Fallback: Search YouTube if not found in studio catalogue
-    try {
-      const results = await YouTube.search(query, { limit });
-      return results.map(item => ({
-        title: item.title || 'Unknown Title',
-        author: item.channel?.name || 'Unknown Artist',
-        url: item.url,
-        thumbnail: item.thumbnail?.url || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500',
-        duration: item.duration ? Math.floor(item.duration / 1000) : parseDurationFormatted(item.durationFormatted),
-        durationFormatted: item.durationFormatted || formatDuration(item.duration ? item.duration / 1000 : 0),
-        source: 'spotify'
-      }));
-    } catch (err) {
-      const cmd = `python -m yt_dlp --default-search "ytsearch${limit}" --print "%(id)s\t%(duration)s\t%(uploader)s\t%(title)s" "${query.replace(/"/g, '')}"`;
-      const stdout = await execPromise(cmd);
-      const lines = stdout.split('\n').map(l => l.trim()).filter(Boolean);
-      return lines.map(line => {
-        const parts = line.split('\t');
-        const id = parts[0];
-        const dur = parseInt(parts[1], 10) || 0;
-        const uploader = parts[2] || 'Artist';
-        const title = parts.slice(3).join('\t') || 'Unknown Title';
-        return {
-          title,
-          author: uploader,
-          url: `https://www.youtube.com/watch?v=${id}`,
-          thumbnail: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
-          duration: dur,
-          durationFormatted: formatDuration(dur),
-          source: 'spotify'
-        };
-      });
-    }
+    return await this.searchYouTubeOnly(query, limit);
   }
 
   /**
    * Resolve any input (prioritizing Spotify)
+   * GUARANTEES track.url is never null!
    */
   static async resolve(input, requester) {
     input = input.trim();
@@ -244,7 +321,15 @@ class AudioExtractor {
     // 3. Query string: ALWAYS search Spotify / Studio Catalogue first!
     const studioTrack = await this.getStudioTrackMetadata(input);
     if (studioTrack) {
-      const matchedUrl = await this.matchStudioAudio(studioTrack.title, studioTrack.author, studioTrack.duration);
+      let matchedUrl = await this.matchStudioAudio(studioTrack.title, studioTrack.author, studioTrack.duration);
+      if (!matchedUrl) {
+        // Fallback search to guarantee a playable URL
+        const ytResults = await this.searchYouTubeOnly(`${studioTrack.title} ${studioTrack.author}`, 1);
+        if (ytResults.length > 0 && ytResults[0].url) {
+          matchedUrl = ytResults[0].url;
+        }
+      }
+
       if (matchedUrl) {
         return {
           type: 'single',
@@ -262,8 +347,8 @@ class AudioExtractor {
       }
     }
 
-    // Fallback: search query
-    const searchResults = await this.search(input, 1);
+    // 4. Fallback: Search YouTube with guaranteed URL
+    const searchResults = await this.searchYouTubeOnly(input, 1);
     if (!searchResults.length) {
       throw new Error(`No tracks found matching "${input}"`);
     }
@@ -322,7 +407,14 @@ class AudioExtractor {
       }
 
       // Match exact studio audio corresponding to the Spotify track
-      const matchedUrl = await this.matchStudioAudio(title, artist, durationSec);
+      let matchedUrl = await this.matchStudioAudio(title, artist, durationSec);
+      if (!matchedUrl) {
+        const ytResults = await this.searchYouTubeOnly(`${title} ${artist}`, 1);
+        if (ytResults.length > 0 && ytResults[0].url) {
+          matchedUrl = ytResults[0].url;
+        }
+      }
+
       if (!matchedUrl) {
         throw new Error(`Could not find studio audio source for "${title} - ${artist}"`);
       }
@@ -392,8 +484,10 @@ class AudioExtractor {
       }
     }
 
+    const bin = getYtDlp();
+
     if (url.includes('list=') && !url.includes('list=RD')) {
-      const cmd = `python -m yt_dlp --flat-playlist --dump-single-json --no-warnings "${url}"`;
+      const cmd = `${bin} --flat-playlist --dump-single-json --no-warnings --no-check-certificates "${url}"`;
       try {
         const stdout = await execPromise(cmd);
         const data = JSON.parse(stdout);
@@ -420,11 +514,11 @@ class AudioExtractor {
       } catch (e) {}
     }
 
-    const cmd = `python -m yt_dlp --dump-single-json --no-warnings "${url}"`;
+    const cmd = `${bin} --dump-single-json --no-warnings --no-check-certificates "${url}"`;
     const stdout = await execPromise(cmd);
     const data = JSON.parse(stdout);
 
-    // Even if user provides a YouTube link, upgrade to Spotify Studio release if possible!
+    // Upgrade music video to Spotify Studio release if available
     const cleanTitle = (data.title || '')
       .replace(/\(official (music )?video\)/i, '')
       .replace(/\[official (music )?video\]/i, '')

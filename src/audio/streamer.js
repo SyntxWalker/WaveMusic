@@ -1,7 +1,15 @@
 const { spawn } = require('child_process');
-const ffmpegPath = require('ffmpeg-static');
+const ffmpegStatic = require('ffmpeg-static');
+const fs = require('fs');
 const { createAudioResource, StreamType } = require('@discordjs/voice');
 const config = require('../config');
+
+function getFfmpegBinary() {
+  if (ffmpegStatic && fs.existsSync(ffmpegStatic)) {
+    return ffmpegStatic;
+  }
+  return 'ffmpeg';
+}
 
 class AudioStreamer {
   /**
@@ -53,9 +61,16 @@ class AudioStreamer {
       'pipe:1'
     );
 
-    const ffmpegProcess = spawn(ffmpegPath, ffmpegArgs, {
-      stdio: ['ignore', 'pipe', 'ignore'],
+    const ffmpegProcess = spawn(getFfmpegBinary(), ffmpegArgs, {
+      stdio: ['ignore', 'pipe', 'pipe'],
       windowsHide: true
+    });
+
+    ffmpegProcess.stderr.on('data', (d) => {
+      const msg = d.toString();
+      if (msg.includes('Error') || msg.includes('Invalid')) {
+        console.warn('[FFmpeg Stream Warning]:', msg.trim().slice(0, 160));
+      }
     });
 
     const stream = ffmpegProcess.stdout;

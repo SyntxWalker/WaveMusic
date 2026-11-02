@@ -152,19 +152,20 @@ class GuildQueue {
     try {
       this.currentTrack = track;
 
-      // If track has no URL yet (e.g. from Spotify album/playlist), match studio audio dynamically
+      // If track has no URL yet (e.g. from Spotify album/playlist), match audio source dynamically
       if (!track.url) {
-        const matchedUrl = await AudioExtractor.matchStudioAudio(track.title, track.author, track.duration);
+        let matchedUrl = await AudioExtractor.matchStudioAudio(track.title, track.author, track.duration);
+        if (!matchedUrl) {
+          const fallbackQuery = track.searchQuery || `${track.title} ${track.author || ''}`;
+          const matches = await AudioExtractor.searchYouTubeOnly(fallbackQuery, 1);
+          if (matches.length > 0 && matches[0].url) {
+            matchedUrl = matches[0].url;
+            if (!track.duration && matches[0].duration) track.duration = matches[0].duration;
+          }
+        }
+
         if (matchedUrl) {
           track.url = matchedUrl;
-        } else if (track.searchQuery) {
-          const matches = await AudioExtractor.search(track.searchQuery, 1);
-          if (matches.length > 0 && matches[0].url) {
-            track.url = matches[0].url;
-            if (!track.duration) track.duration = matches[0].duration;
-          } else {
-            throw new Error(`Could not find audio source for "${track.title}"`);
-          }
         } else {
           throw new Error(`Could not find audio source for "${track.title}"`);
         }

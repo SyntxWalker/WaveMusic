@@ -1,3 +1,13 @@
+---
+title: WaveMusic
+emoji: 🌊
+colorFrom: indigo
+colorTo: purple
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # 🌊 WaveMusic — Full-Stack Discord Music Bot
 
 A full-stack, studio-grade Discord music bot built for modern Discord communities. Designed with a **standalone glassmorphic canvas image miniplayer**, **Spotify-first studio catalogue resolution**, **lossless 256kbps 48kHz Opus audio mastering**, **simple uncolored embedded controls**, **voice channel status synchronization**, **24/7 channel locking**, and a **built-in web dashboard with Terms of Service and Privacy Policy**.

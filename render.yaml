@@ -12,6 +12,6 @@ services:
       - key: CLIENT_ID
         sync: false
       - key: DEFAULT_PREFIX
-        value: "!"
+        value: "+"
       - key: PORT
         value: 3000

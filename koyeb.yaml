@@ -21,4 +21,4 @@ services:
       - key: CLIENT_ID
         secret: CLIENT_ID
       - key: DEFAULT_PREFIX
-        value: "!"
+        value: "+"

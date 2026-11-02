@@ -13,6 +13,18 @@ Add WaveMusic to your Discord server in one click:
 
 ---
 
+## ⚡ 1-Click Free 24/7 Cloud Deployment
+
+Deploy WaveMusic to the cloud with one click so it stays online 24/7 without keeping your computer on:
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/SyntxWalker/WaveMusic)
+&nbsp;&nbsp;
+[![Deploy to Koyeb](https://www.koyeb.com/static/images/deploy/button.svg)](https://app.koyeb.com/deploy?type=git&repository=github.com/SyntxWalker/WaveMusic&branch=master&name=wavemusic)
+
+*(See [DEPLOYMENT.md](DEPLOYMENT.md) for the Hugging Face Spaces 16GB RAM guide with zero credit card needed).*
+
+---
+
 ## ✨ Features
 
 - **🟢 Spotify-First Studio Resolution Engine:**

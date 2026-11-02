@@ -1,0 +1,22 @@
+# Environment secrets (NEVER commit tokens)
+.env
+.env.local
+.env.*.local
+
+# Node dependencies
+node_modules/
+npm-debug.log*
+
+# Database & Persistent Runtime Data
+data/*.db
+data/*.db-journal
+data/*.sqlite
+
+# Logs & Scratches
+*.log
+scratch/
+.system_generated/
+
+# OS files
+.DS_Store
+Thumbs.db

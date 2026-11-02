@@ -1,0 +1,24 @@
+name: wavemusic-bot
+services:
+  - name: bot-service
+    type: web
+    docker:
+      dockerfile: Dockerfile
+    instance_type: eco
+    ports:
+      - port: 8000
+        path: /
+    routes:
+      - path: /
+        port: 8000
+    health_checks:
+      - http:
+          path: /health
+          port: 8000
+    env:
+      - key: DISCORD_TOKEN
+        secret: DISCORD_TOKEN
+      - key: CLIENT_ID
+        secret: CLIENT_ID
+      - key: DEFAULT_PREFIX
+        value: "!"

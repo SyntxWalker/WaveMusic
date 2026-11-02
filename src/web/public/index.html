@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WaveMusic — Premium Discord Music Experience</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Ambient background glow elements -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+  <div class="ambient-glow glow-3"></div>
+
+  <!-- Navigation -->
+  <header class="navbar">
+    <div class="container nav-content">
+      <div class="brand">
+        <img src="logo.png" alt="WaveMusic Logo" class="brand-logo-img">
+        <span class="brand-text">Wave<span>Music</span></span>
+      </div>
+      <nav class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#commands">Commands</a>
+        <a href="#setup">Setup</a>
+        <a href="/terms">Terms</a>
+        <a href="/privacy">Privacy</a>
+      </nav>
+      <div class="nav-actions">
+        <a id="invite-top-btn" href="/invite" target="_blank" class="btn btn-primary">
+          <span>Add to Discord</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <main>
+    <section class="hero-section">
+      <div class="container hero-container">
+        <div class="hero-badge">
+          <span class="live-indicator"></span>
+          <span>48kHz Hi-Fi Opus Engine • 24/7 Channel Lock</span>
+        </div>
+        <h1 class="hero-title">
+          The Cleanest Discord Music Bot. <br>
+          <span class="gradient-text">Pure Audio, Clutter-Free.</span>
+        </h1>
+        <p class="hero-subtitle">
+          Stream seamlessly from YouTube, Spotify, or track name with lossless audio quality.
+          Enjoy a minimalistic glassmorphic Miniplayer with intuitive, zero-emoji tactile buttons.
+        </p>
+        <div class="hero-cta-group">
+          <a id="invite-hero-btn" href="/invite" target="_blank" class="btn btn-primary btn-lg">
+            Add to Discord
+          </a>
+          <a href="#commands" class="btn btn-glass btn-lg">
+            View Commands
+          </a>
+        </div>
+
+        <!-- Live Server Status Bar -->
+        <div class="glass-stats-bar">
+          <div class="stat-item">
+            <span class="stat-label">Bot Status</span>
+            <span class="stat-value text-success" id="stat-status">Online</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <span class="stat-label">Gateway Ping</span>
+            <span class="stat-value" id="stat-ping">-- ms</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <span class="stat-label">Connected Servers</span>
+            <span class="stat-value" id="stat-servers">--</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <span class="stat-label">Active Players</span>
+            <span class="stat-value text-violet" id="stat-players">--</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <span class="stat-label">Sampling Rate</span>
+            <span class="stat-value">48,000 Hz</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+
+    <!-- Features Section -->
+    <section id="features" class="section">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag">ENGINE SPECS</span>
+          <h2 class="section-title">Engineered for Premium Sound</h2>
+          <p class="section-subtitle">High-fidelity streaming, full metadata resolution, and 24/7 channel persistence.</p>
+        </div>
+
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon">48k</div>
+            <h3>Lossless Hi-Fi Audio</h3>
+            <p>Direct FFmpeg Opus pipeline running at 48,000Hz stereo with 192kbps high-bitrate audio transcoding and volume headroom normalization.</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">24/7</div>
+            <h3>24/7 Channel Lock</h3>
+            <p>Keep the bot in your voice channel 24/7 with zero drops. Automatically reconnects across bot restarts with SQLite persistence.</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">SR</div>
+            <h3>Interactive Search</h3>
+            <p>Use <code>/search</code> or <code>!search</code> to look up songs and choose tracks immediately from an interactive Discord dropdown menu.</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">SP</div>
+            <h3>Spotify & YouTube</h3>
+            <p>Direct link playback for YouTube videos, playlists, and Spotify tracks, albums, and playlists with seamless metadata conversion.</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">LY</div>
+            <h3>Synced Lyrics Fetcher</h3>
+            <p>Integrated LRCLIB lyrics engine retrieves plain and synchronized lyrics with elegant paginated glassmorphic embeds.</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">PX</div>
+            <h3>Customizable Prefix</h3>
+            <p>Easily configure server prefixes via <code>/prefix</code> or <code>!prefix</code>, alongside full support for Discord native Slash commands.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Commands Table Section -->
+    <section id="commands" class="section">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag">COMMANDS</span>
+          <h2 class="section-title">Complete Command Reference</h2>
+          <p class="section-subtitle">Use either Slash commands (<code>/</code>) or your server's prefix commands (default <code>!</code>).</p>
+        </div>
+
+        <div class="table-container glass-card">
+          <table class="commands-table">
+            <thead>
+              <tr>
+                <th>Command</th>
+                <th>Slash Version</th>
+                <th>Description</th>
+                <th>Example</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>!play &lt;query&gt;</code></td>
+                <td><code>/play</code></td>
+                <td>Play from YouTube, Spotify, or query</td>
+                <td><code>!play Starboy The Weeknd</code></td>
+              </tr>
+              <tr>
+                <td><code>!search &lt;query&gt;</code></td>
+                <td><code>/search</code></td>
+                <td>Search and pick from top 5 tracks via select menu</td>
+                <td><code>!search Bohemian Rhapsody</code></td>
+              </tr>
+              <tr>
+                <td><code>!247</code></td>
+                <td><code>/247</code></td>
+                <td>Toggle 24/7 voice channel lock (stays 24/7)</td>
+                <td><code>!247</code></td>
+              </tr>
+              <tr>
+                <td><code>!lyrics [song]</code></td>
+                <td><code>/lyrics</code></td>
+                <td>Fetch lyrics for current track or song title</td>
+                <td><code>!lyrics Blinding Lights</code></td>
+              </tr>
+              <tr>
+                <td><code>!prefix &lt;symbol&gt;</code></td>
+                <td><code>/prefix</code></td>
+                <td>View or change server bot command prefix</td>
+                <td><code>!prefix ?</code></td>
+              </tr>
+              <tr>
+                <td><code>!pause</code></td>
+                <td><code>/pause</code></td>
+                <td>Pause currently playing audio</td>
+                <td><code>!pause</code></td>
+              </tr>
+              <tr>
+                <td><code>!resume</code></td>
+                <td><code>/resume</code></td>
+                <td>Resume paused audio playback</td>
+                <td><code>!resume</code></td>
+              </tr>
+              <tr>
+                <td><code>!skip</code></td>
+                <td><code>/skip</code></td>
+                <td>Skip to the next song in the queue</td>
+                <td><code>!skip</code></td>
+              </tr>
+              <tr>
+                <td><code>!stop</code></td>
+                <td><code>/stop</code></td>
+                <td>Stop playback, clear queue, and leave VC</td>
+                <td><code>!stop</code></td>
+              </tr>
+              <tr>
+                <td><code>!loop [mode]</code></td>
+                <td><code>/loop</code></td>
+                <td>Toggle repeat mode (off, track, queue)</td>
+                <td><code>!loop track</code></td>
+              </tr>
+              <tr>
+                <td><code>!queue</code></td>
+                <td><code>/queue</code></td>
+                <td>View upcoming tracks with pagination</td>
+                <td><code>!queue</code></td>
+              </tr>
+              <tr>
+                <td><code>!volume &lt;0-150&gt;</code></td>
+                <td><code>/volume</code></td>
+                <td>Adjust playback volume</td>
+                <td><code>!volume 80</code></td>
+              </tr>
+              <tr>
+                <td><code>!shuffle</code></td>
+                <td><code>/shuffle</code></td>
+                <td>Randomize upcoming queue tracks</td>
+                <td><code>!shuffle</code></td>
+              </tr>
+              <tr>
+                <td><code>!nowplaying</code></td>
+                <td><code>/nowplaying</code></td>
+                <td>Display the live Miniplayer embed</td>
+                <td><code>!nowplaying</code></td>
+              </tr>
+              <tr>
+                <td><code>!clear</code></td>
+                <td><code>/clear</code></td>
+                <td>Clear upcoming tracks from queue</td>
+                <td><code>!clear</code></td>
+              </tr>
+              <tr>
+                <td><code>!stats</code></td>
+                <td><code>/stats</code></td>
+                <td>View latency, uptime, memory, and players</td>
+                <td><code>!stats</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Getting Started Section -->
+    <section id="setup" class="section">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag">QUICK START</span>
+          <h2 class="section-title">Add to Your Server in 30 Seconds</h2>
+        </div>
+
+        <div class="steps-grid">
+          <div class="step-card">
+            <span class="step-number">1</span>
+            <h3>Invite the Bot</h3>
+            <p>Click <a href="/invite" target="_blank" class="text-violet">Invite WaveMusic</a> and select your Discord server.</p>
+          </div>
+          <div class="step-card">
+            <span class="step-number">2</span>
+            <h3>Join a Voice Channel</h3>
+            <p>Join any voice channel where you and your community want to listen.</p>
+          </div>
+          <div class="step-card">
+            <span class="step-number">3</span>
+            <h3>Type /play or /247</h3>
+            <p>Use <code>/play Starboy</code> or lock the bot in with <code>/247</code> to begin enjoying lossless music!</p>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- Trust, Security & Compliance Section -->
+    <section id="legal" class="section">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag">SECURITY & TRUST</span>
+          <h2 class="section-title">Built with Privacy & Compliance First</h2>
+          <p class="section-subtitle">Zero voice recording, minimal data retention, and 100% transparent operations.</p>
+        </div>
+
+        <div class="legal-preview-grid">
+          <div class="legal-preview-card glass-card">
+            <div class="legal-preview-icon">📜</div>
+            <h3>Terms of Service</h3>
+            <p>Our guidelines for fair, responsible, and compliant usage across all Discord servers and communities.</p>
+            <a href="/terms" class="legal-link">View Terms & Conditions →</a>
+          </div>
+
+          <div class="legal-preview-card glass-card">
+            <div class="legal-preview-icon">🔒</div>
+            <h3>Privacy Policy</h3>
+            <p>We guarantee zero voice recording, strict data minimization, and total control over your server configuration.</p>
+            <a href="/privacy" class="legal-link">View Privacy Policy →</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-content">
+      <p>© 2026 WaveMusic. Full-Stack Discord Music Engine.</p>
+      <div class="footer-links">
+        <a href="/invite" target="_blank">Invite Bot</a>
+        <a href="#commands">Commands</a>
+        <a href="#setup">Setup</a>
+        <a href="/terms">Terms of Service</a>
+        <a href="/privacy">Privacy Policy</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

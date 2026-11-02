@@ -1,0 +1,80 @@
+const { spawn } = require('child_process');
+const ffmpegPath = require('ffmpeg-static');
+const { createAudioResource, StreamType } = require('@discordjs/voice');
+const config = require('../config');
+
+class AudioStreamer {
+  /**
+   * Creates a studio-mastered 48kHz Opus audio stream according to audiophile specifications:
+   * - Codec: Opus (libopus)
+   * - Sample Rate: 48,000 Hz
+   * - Channels: Stereo 2.0
+   * - Bitrate: 256 kbps VBR
+   * - Loudness Normalization: EBU R128 (Integrated -16 LUFS, True Peak -1.0 dB Headroom, LRA 11)
+   * - Resampling: High-quality FFmpeg swr 28-bit triangular dithered resampler
+   * @param {string} streamUrl Direct audio playback URL
+   * @param {number} initialVolume Initial volume (0 - 150)
+   * @param {number} seekSeconds Optional seek offset in seconds
+   */
+  static createResource(streamUrl, initialVolume = 100, seekSeconds = 0) {
+    const ffmpegArgs = [
+      '-reconnect', '1',
+      '-reconnect_streamed', '1',
+      '-reconnect_delay_max', '5'
+    ];
+
+    if (seekSeconds > 0) {
+      ffmpegArgs.push('-ss', String(seekSeconds));
+    }
+
+    const normVolume = Math.max(0, Math.min(150, initialVolume)) / 100;
+
+    // Audiophile mastering filter chain matching user specifications:
+    // 1. High-quality FFmpeg SWR resampler (48kHz, 28-bit precision, triangular dither)
+    // 2. EBU R128 loudness normalization (I=-16 LUFS, True-Peak -1.0 dB Headroom, LRA 11)
+    // 3. User volume adjustment
+    const audioFilters = [
+      'aresample=48000:resampler=swr:precision=28:dither_method=triangular',
+      'loudnorm=I=-16:TP=-1.0:LRA=11',
+      `volume=${normVolume.toFixed(3)}`
+    ].join(', ');
+
+    ffmpegArgs.push(
+      '-i', streamUrl,
+      '-vn',
+      '-af', audioFilters,
+      '-ar', '48000',
+      '-ac', '2',
+      '-c:a', 'libopus',
+      '-b:a', '256k',
+      '-vbr', 'on',
+      '-application', 'audio',
+      '-f', 'opus',
+      'pipe:1'
+    );
+
+    const ffmpegProcess = spawn(ffmpegPath, ffmpegArgs, {
+      stdio: ['ignore', 'pipe', 'ignore'],
+      windowsHide: true
+    });
+
+    const stream = ffmpegProcess.stdout;
+
+    ffmpegProcess.on('error', (err) => {
+      console.error('[FFmpeg Process Error]:', err.message);
+    });
+
+    stream.on('error', (err) => {
+      console.error('[FFmpeg Stream Error]:', err.message);
+    });
+
+    const resource = createAudioResource(stream, {
+      inputType: StreamType.OggOpus
+    });
+
+    resource.ffmpegProcess = ffmpegProcess;
+    return resource;
+  }
+}
+
+module.exports = AudioStreamer;

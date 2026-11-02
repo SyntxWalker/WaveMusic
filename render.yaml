@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: wavemusic-bot
+    env: docker
+    plan: free
+    region: oregon
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: DISCORD_TOKEN
+        sync: false
+      - key: CLIENT_ID
+        sync: false
+      - key: DEFAULT_PREFIX
+        value: "!"
+      - key: PORT
+        value: 3000

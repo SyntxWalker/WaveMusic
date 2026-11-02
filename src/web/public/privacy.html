@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy — WaveMusic</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+  <div class="ambient-glow glow-3"></div>
+
+  <!-- Navigation -->
+  <header class="navbar">
+    <div class="container nav-content">
+      <a href="/" class="brand" style="text-decoration: none;">
+        <img src="logo.png" alt="WaveMusic Logo" class="brand-logo-img">
+        <span class="brand-text">Wave<span>Music</span></span>
+      </a>
+      <nav class="nav-links">
+        <a href="/">Home</a>
+        <a href="/#features">Features</a>
+        <a href="/#commands">Commands</a>
+        <a href="/terms">Terms</a>
+        <a href="/privacy" class="active">Privacy</a>
+      </nav>
+      <div class="nav-actions">
+        <a href="/invite" target="_blank" class="btn btn-primary">
+          <span>Add to Discord</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Legal Content -->
+  <main class="legal-main">
+    <div class="container">
+      <div class="legal-header">
+        <span class="section-tag">DATA & PRIVACY</span>
+        <h1 class="legal-title">Privacy Policy</h1>
+        <p class="legal-subtitle">Effective Date: November 2, 2026 • Last Updated: November 2026</p>
+      </div>
+
+      <div class="legal-card glass-card">
+        <section class="legal-section">
+          <h2>1. Introduction & Commitment to Privacy</h2>
+          <p>
+            At <strong>WaveMusic</strong>, we believe privacy is a fundamental right. We are dedicated to providing a high-fidelity,
+            transparent, and clutter-free Discord music bot with a strict data-minimization approach. This Privacy Policy details what
+            information is processed, how it is utilized, and how your server’s privacy is protected.
+          </p>
+        </section>
+
+        <section class="legal-section highlight-box">
+          <h2>2. Voice Audio Policy (Zero Recording Guarantee)</h2>
+          <p>
+            <strong>WaveMusic NEVER records, stores, processes, transcribes, monitors, or transmits user microphone audio or voice communications.</strong>
+          </p>
+          <p>
+            When WaveMusic joins a Discord voice channel, its audio engine operates exclusively in <strong>transmit/output mode</strong>
+            to stream requested music. The bot does not tap into the incoming voice gateway streams, ensuring 100% voice privacy for every
+            member in the channel.
+          </p>
+        </section>
+
+        <section class="legal-section">
+          <h2>3. Information We Collect & Store</h2>
+          <p>We only store the minimal technical parameters necessary for bot functionality:</p>
+          <ul>
+            <li>
+              <strong>Guild (Server) Settings:</strong> Stored in a local SQLite database (<code>wavemusic.db</code>). This includes:
+              <ul>
+                <li>Discord Guild ID (to identify your server).</li>
+                <li>Custom Server Prefix (configured via <code>/prefix</code>, e.g. <code>+</code> or <code>!</code>).</li>
+                <li>24/7 Voice Channel ID and Text Channel ID (to enable auto-reconnection when 24/7 mode is toggled on).</li>
+                <li>Default server playback volume level.</li>
+              </ul>
+            </li>
+            <li>
+              <strong>Temporary Interaction Data:</strong> When a user executes a command (e.g. <code>/play</code>), their Discord User ID
+              and username are temporarily processed in memory to display "Requested by @User" on the Miniplayer card. This information is
+              never stored permanently or sold.
+            </li>
+          </ul>
+        </section>
+
+        <section class="legal-section">
+          <h2>4. Information We Never Collect</h2>
+          <p>WaveMusic does NOT collect, request, or have access to:</p>
+          <ul>
+            <li>Personal user messages, chat history, or direct messages (DMs).</li>
+            <li>Passwords, email addresses, or payment credentials.</li>
+            <li>IP addresses or hardware identifiers of Discord members.</li>
+            <li>Voice channel conversations or microphone feeds.</li>
+          </ul>
+        </section>
+
+        <section class="legal-section">
+          <h2>5. Third-Party Services & APIs</h2>
+          <p>To deliver music playback, WaveMusic interacts with the following external services solely for real-time resolution:</p>
+          <ul>
+            <li><strong>Discord API:</strong> For bot gateway connectivity, command handling, and voice transmission.</li>
+            <li><strong>Spotify Public Web API / Catalogue:</strong> For fetching official studio track metadata, artist names, and high-resolution album artwork.</li>
+            <li><strong>YouTube Music / Topic:</strong> For matching and streaming licensed audio master recordings.</li>
+            <li><strong>LRCLIB:</strong> For retrieving public, synchronized and plain song lyrics.</li>
+          </ul>
+          <p>No user data is ever transmitted to advertisers, telemetry aggregators, or marketing brokers.</p>
+        </section>
+
+        <section class="legal-section">
+          <h2>6. Data Retention & Deletion Rights</h2>
+          <p>
+            Guild settings are retained only as long as WaveMusic remains an active member of your server.
+            If you remove the bot from your Discord server, your settings become dormant.
+          </p>
+          <p>
+            Server administrators can request immediate and permanent deletion of all stored guild records at any time by contacting our support
+            or by resetting guild configuration with the bot's reset tools.
+          </p>
+        </section>
+
+        <section class="legal-section">
+          <h2>7. Contact & Support</h2>
+          <p>
+            If you have questions, concerns, or requests regarding this Privacy Policy or your server’s data, please reach out via our
+            official Discord support channels or repository.
+          </p>
+        </section>
+      </div>
+
+      <div class="legal-footer-nav">
+        <a href="/" class="btn btn-glass">← Back to Home</a>
+        <a href="/terms" class="btn btn-primary">Read Terms & Conditions →</a>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-content">
+      <p>© 2026 WaveMusic. Full-Stack Discord Music Engine.</p>
+      <div class="footer-links">
+        <a href="/invite" target="_blank">Invite Bot</a>
+        <a href="/#commands">Commands</a>
+        <a href="/#setup">Setup</a>
+        <a href="/terms">Terms of Service</a>
+        <a href="/privacy">Privacy Policy</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

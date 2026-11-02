@@ -38,6 +38,7 @@ class AudioStreamer {
     const ytdlpArgs = [
       '-o', '-',
       '-f', 'ba/b',
+      '--extractor-args', 'youtube:player_client=android,web',
       '--no-check-certificates',
       '--geo-bypass',
       '--no-warnings',

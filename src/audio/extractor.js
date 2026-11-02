@@ -261,15 +261,34 @@ class AudioExtractor {
           let score = 0;
           const durDiff = targetDurationSec > 0 ? Math.abs(dur - targetDurationSec) : 0;
 
-          // 1. Channel authority
+          // Check artist presence
+          const uploaderClean = uploader.replace(/-?\s*topic/i, '').trim();
+          const hasArtist = primaryArtist && (
+            candTitle.includes(primaryArtist) ||
+            uploader.includes(primaryArtist) ||
+            uploaderClean.includes(primaryArtist) ||
+            primaryArtist.includes(uploaderClean)
+          );
+          const hasSecondaryArtist = secondaryArtist && (
+            candTitle.includes(secondaryArtist) ||
+            uploader.includes(secondaryArtist)
+          );
+          const isOfficialLabel = officialLabels.some(lbl => uploader.includes(lbl));
+
+          // 1. Channel authority & Artist verification
           if (uploader.includes('topic')) {
-            score += 160;
-          } else if (uploader.includes(primaryArtist) || primaryArtist.includes(uploader)) {
-            score += 130;
-          } else if (officialLabels.some(lbl => uploader.includes(lbl))) {
-            score += 100;
+            if (hasArtist) {
+              score += 180; // Official YouTube Music Auto-generated Topic release
+            } else {
+              score -= 350; // Topic channel of an unrelated artist - reject!
+            }
+          } else if (hasArtist || hasSecondaryArtist) {
+            score += 120;
+            if (isOfficialLabel) score += 60;
+          } else if (isOfficialLabel) {
+            score += 70; // Official label
           } else {
-            score -= 50; // Fan / unofficial channel penalty (often pitch-shifted)
+            score -= 150; // Fan / unofficial channel with no artist match
           }
 
           // 2. Strict duration matching
@@ -288,7 +307,7 @@ class AudioExtractor {
           // 4. Strict penalties for altered / remixed audio
           for (const mod of bannedModifiers) {
             if (!cleanTitleLower.includes(mod) && candTitle.includes(mod)) {
-              score -= 300;
+              score -= 350;
             }
           }
 

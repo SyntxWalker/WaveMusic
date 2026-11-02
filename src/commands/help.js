@@ -42,6 +42,7 @@ module.exports = {
           value:
             `\`${prefix}play <song/url>\` (/play) - Play from YouTube, Spotify, or name\n` +
             `\`${prefix}search <query>\` (/search) - Search & choose from top 5 tracks\n` +
+            `\`${prefix}replay\` (/replay) - Restart current song from beginning\n` +
             `\`${prefix}pause\` (/pause) - Pause current playback\n` +
             `\`${prefix}resume\` (/resume) - Resume paused track\n` +
             `\`${prefix}skip\` (/skip) - Skip current song\n` +

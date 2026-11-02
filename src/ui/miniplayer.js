@@ -130,6 +130,10 @@ class MiniplayerUI {
 
     const row2 = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
+        .setCustomId('wm_replay')
+        .setLabel('Replay')
+        .setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder()
         .setCustomId('wm_shuffle')
         .setLabel('Shuffle')
         .setStyle(ButtonStyle.Secondary),

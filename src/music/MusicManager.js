@@ -104,6 +104,18 @@ class MusicManager {
         break;
       }
 
+      case 'wm_replay': {
+        if (!queue.currentTrack) {
+          return interaction.reply({
+            embeds: [new EmbedBuilder().setColor(config.colors.error).setDescription('No track currently playing.')],
+            ephemeral: true
+          });
+        }
+        await interaction.deferUpdate().catch(() => {});
+        await queue.replay();
+        break;
+      }
+
       case 'wm_loop': {
         queue.cycleLoop();
         await interaction.deferUpdate().catch(() => {});

@@ -267,6 +267,12 @@ class GuildQueue {
     this.player.stop();
   }
 
+  async replay() {
+    if (!this.currentTrack) return false;
+    await this.playTrack(this.currentTrack);
+    return true;
+  }
+
   stop() {
     this.tracks = [];
     this.currentTrack = null;

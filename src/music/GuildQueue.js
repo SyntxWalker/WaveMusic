@@ -67,9 +67,14 @@ class GuildQueue {
     });
 
     this.player.on(AudioPlayerStatus.Idle, () => {
-      // Clean up previous ffmpeg process
-      if (this.resource && this.resource.ffmpegProcess) {
-        try { this.resource.ffmpegProcess.kill(); } catch (e) {}
+      // Clean up previous yt-dlp and ffmpeg processes
+      if (this.resource) {
+        if (this.resource.ytdlpProcess) {
+          try { this.resource.ytdlpProcess.kill(); } catch (e) {}
+        }
+        if (this.resource.ffmpegProcess) {
+          try { this.resource.ffmpegProcess.kill(); } catch (e) {}
+        }
       }
 
       // Handle looping
@@ -171,11 +176,18 @@ class GuildQueue {
         }
       }
 
-      // Resolve direct stream URL with best audio format
-      const streamUrl = await AudioExtractor.getAudioStreamUrl(track.url);
+      // Clean up previous streaming processes if any
+      if (this.resource) {
+        if (this.resource.ytdlpProcess) {
+          try { this.resource.ytdlpProcess.kill(); } catch (e) {}
+        }
+        if (this.resource.ffmpegProcess) {
+          try { this.resource.ffmpegProcess.kill(); } catch (e) {}
+        }
+      }
 
-      // Create studio-grade mastered 48kHz Opus audio resource
-      this.resource = AudioStreamer.createResource(streamUrl, this.volume);
+      // Stream directly via pipe: yt-dlp -> FFmpeg -> Discord Voice (Audiophile 48kHz Opus)
+      this.resource = AudioStreamer.createResourceFromSource(track.url, this.volume);
       this.player.play(this.resource);
     } catch (err) {
       console.error(`[Playback Error in ${this.guild.id}]:`, err.message);
@@ -204,9 +216,9 @@ class GuildQueue {
   async sendMiniplayer() {
     if (!this.currentTrack || !this.textChannel) return;
 
-    // Clean up buttons on previous miniplayer message
+    // Delete previous miniplayer message if it exists to ensure only 1 single card is present
     if (this.miniplayerMessage) {
-      this.miniplayerMessage.edit({ components: [] }).catch(() => {});
+      this.miniplayerMessage.delete().catch(() => {});
       this.miniplayerMessage = null;
     }
 
@@ -349,8 +361,13 @@ class GuildQueue {
     this.tracks = [];
     this.currentTrack = null;
 
-    if (this.resource && this.resource.ffmpegProcess) {
-      try { this.resource.ffmpegProcess.kill(); } catch (e) {}
+    if (this.resource) {
+      if (this.resource.ytdlpProcess) {
+        try { this.resource.ytdlpProcess.kill(); } catch (e) {}
+      }
+      if (this.resource.ffmpegProcess) {
+        try { this.resource.ffmpegProcess.kill(); } catch (e) {}
+      }
     }
 
     try {

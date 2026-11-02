@@ -566,6 +566,10 @@ class AudioExtractor {
       tracks: [track]
     };
   }
+
+  static getYtDlp() {
+    return getYtDlp();
+  }
 }
 
 module.exports = AudioExtractor;
